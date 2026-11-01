@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>Cyber Tap</title>
+<style>
+html,body{margin:0;height:100%;background:#020510;overflow:hidden;touch-action:none}
+canvas{display:block;width:100%;height:100%}
+#hint{position:fixed;inset:auto 0 24px 0;text-align:center;color:#0ff;font:14px monospace;letter-spacing:.2em;text-shadow:0 0 8px #0ff;pointer-events:none}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="hint">TAP / DRAG</div>
+<script>
+const c=document.getElementById('c'),x=c.getContext('2d');
+let W,H,rain=[],fx=[];
+function size(){W=c.width=innerWidth*devicePixelRatio;H=c.height=innerHeight*devicePixelRatio;
+  rain=Array.from({length:Math.floor(W/(16*devicePixelRatio))},()=>Math.random()*H)}
+addEventListener('resize',size);size();
+const chars='01アイウエオカキクケコサシスセソ<>/{}#$';
+function burst(px,py){
+  const hue=Math.random()<.5?180:300;
+  fx.push({x:px,y:py,r:0,hue,life:1});
+  for(let i=0;i<24;i++){const a=Math.random()*6.28,s=2+Math.random()*6;
+    fx.push({x:px,y:py,vx:Math.cos(a)*s,vy:Math.sin(a)*s,hue,life:1,p:1})}
+}
+function pos(e){const r=c.getBoundingClientRect();return[(e.clientX-r.left)*devicePixelRatio,(e.clientY-r.top)*devicePixelRatio]}
+c.addEventListener('pointerdown',e=>{burst(...pos(e));document.getElementById('hint').style.display='none'});
+c.addEventListener('pointermove',e=>{if(e.buttons||e.pointerType==='touch'){if(Math.random()<.3)burst(...pos(e))}});
+function loop(){
+  x.fillStyle='rgba(2,5,16,.18)';x.fillRect(0,0,W,H);
+  const fs=16*devicePixelRatio;x.font=fs+'px monospace';
+  rain.forEach((y,i)=>{x.fillStyle='#0f8';x.shadowBlur=0;
+    x.fillText(chars[Math.random()*chars.length|0],i*fs,y);
+    rain[i]=y>H&&Math.random()>.975?0:y+fs*.6});
+  fx=fx.filter(f=>f.life>0);
+  fx.forEach(f=>{f.life-=f.p?.02:.015;
+    x.shadowBlur=20;x.shadowColor=`hsl(${f.hue},100%,60%)`;
+    if(f.p){f.x+=f.vx;f.y+=f.vy;f.vx*=.97;f.vy*=.97;
+      x.fillStyle=`hsla(${f.hue},100%,70%,${f.life})`;x.fillRect(f.x,f.y,4*devicePixelRatio,4*devicePixelRatio)}
+    else{f.r+=8*devicePixelRatio;x.strokeStyle=`hsla(${f.hue},100%,60%,${f.life})`;
+      x.lineWidth=3*devicePixelRatio;x.beginPath();x.arc(f.x,f.y,f.r,0,6.28);x.stroke()}});
+  requestAnimationFrame(loop)}
+loop();
+</script>
+</body>
+</html>
